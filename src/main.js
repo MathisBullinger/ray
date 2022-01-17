@@ -8,7 +8,7 @@ canvas.height = window.innerHeight * devicePixelRatio;
 const raysW = canvas.width
 const raysH = Math.ceil(canvas.height / canvas.width * raysW)
 
-function render() {
+async function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
   const pos = [0, 0, 0]
@@ -19,7 +19,7 @@ function render() {
     for (let x = 0; x < raysW; x++) {
       const dir = [
         x / raysW * vrW - vrW / 2,
-        y / raysH * vrH - vrH / 2,
+        y / raysH * -vrH + vrH / 2,
         1
       ]
       const cl = trace(pos, norm(dir))
@@ -27,26 +27,26 @@ function render() {
       const sy = y * (canvas.height / raysH)
       ctx.fillStyle = cl
       ctx.fillRect(sx, sy, canvas.width / raysW, canvas.height / raysH)
+      if ((y * raysW + x) % (4 * raysW) === 0) await new Promise(requestAnimationFrame)
     }
   }
 }
 
-const sphere = {
-  pos: [0, 0, 5],
-  rad: 1
-}
-
 const objs = [
   [[0,0,5], 1],
-  [[2,0,8], 1]
+  [[2,1,8], 1]
 ]
 
 const rgb = (...c) => '#' + c.map(v => ('00' + Math.floor((v * 0xFF)).toString(16)).slice(-2)).join('')
 
 function trace(pos, dir) {
-  const v = intersects(pos, dir, sphere.pos, sphere.rad)
-  if (!v) return '#000'
-  return rgb(...v.map(c => (c + 1) / 2))
+  let mags = objs.map((v,i) => [mag(sub(v, pos)), i]).sort(([a], [b]) => a-b)
+  for (let i = 0; i < objs.length; i++) {
+    let obj = objs[mags[i][1]]
+    const v = intersects(pos, dir, obj[0], obj[1])
+    if (v) return '#fff'
+  }
+  return '#000'
 }
 
 function intersects(o, u, c, r) {
