@@ -1,11 +1,11 @@
-import { mag, dot, sub, norm } from './vector'
+import { mag, dot, add, sub, mult, norm } from './vector'
 
 const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
 canvas.width = window.innerWidth * devicePixelRatio;
 canvas.height = window.innerHeight * devicePixelRatio;
 
-const raysW = 50 
+const raysW = canvas.width
 const raysH = Math.ceil(canvas.height / canvas.width * raysW)
 
 function render() {
@@ -36,15 +36,26 @@ const sphere = {
   rad: 1
 }
 
+const objs = [
+  [[0,0,5], 1],
+  [[2,0,8], 1]
+]
+
+const rgb = (...c) => '#' + c.map(v => ('00' + Math.floor((v * 0xFF)).toString(16)).slice(-2)).join('')
+
 function trace(pos, dir) {
-  return intersects(pos, dir, sphere.pos, sphere.rad) ? '#fff' : '#000'
+  const v = intersects(pos, dir, sphere.pos, sphere.rad)
+  if (!v) return '#000'
+  return rgb(...v.map(c => (c + 1) / 2))
 }
 
 function intersects(o, u, c, r) {
-  const v = dot(u, sub(o, c)) 
-  const s = v ** 2 - (mag(sub(o, c)) ** 2 - r ** 2)
-  console.log(s, u)
-  return s >= 0
-}
+  const omc = sub(o, c)
+  const du = dot(u, omc)
+  const s = du ** 2 - (mag(omc) ** 2 - r ** 2)
+  if (s <= 0 || -du - s <= 0) return null 
+  return add(o, mult(u, -du - s))
+}  
+  
 
 render()
