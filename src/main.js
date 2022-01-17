@@ -16,16 +16,17 @@ const clAss = (ch, d) => {
   return rgb(...(max <= 1 ? adj : adj.map((v) => v * (1 / max))))
 }
 
-async function render(
-  raysW,
-  raysH = Math.ceil((canvas.height / canvas.width) * raysW)
-) {
+async function render(raysW, skip = 0) {
+  const raysH = Math.ceil((canvas.height / canvas.width) * raysW)
   const pos = [0, 0, 0]
   const vrW = 1
   const vrH = (canvas.height / canvas.width) * vrW
 
   for (let y = 0; y < raysH; y++) {
     for (let x = 0; x < raysW; x++) {
+      if ((y * raysW + x) % (4 * raysW) === 0)
+        await new Promise(requestAnimationFrame)
+      if (skip && x % skip === 0 && y % skip === 0) continue
       const dir = [(x / raysW) * vrW - vrW / 2, (y / raysH) * -vrH + vrH / 2, 1]
       const r = trace(pos, norm(dir))
       const cl = r ? clAss(r[0], r[1]) : '#000'
@@ -33,8 +34,6 @@ async function render(
       const sy = y * (canvas.height / raysH)
       ctx.fillStyle = cl
       ctx.fillRect(sx, sy, canvas.width / raysW, canvas.height / raysH)
-      if ((y * raysW + x) % (4 * raysW) === 0)
-        await new Promise(requestAnimationFrame)
     }
   }
 }
@@ -101,9 +100,14 @@ function intersect(o, u, c, r) {
   return [add(o, mult(u, d)), d]
 }
 
-render()
 ;(async () => {
-  const r = canvas.width
-  await render(r / 16)
-  await render(r / 2)
+  for (let i = 16; i >= 1; i /= 2) {
+    const t0 = performance.now()
+    await render(canvas.width / i, i < 16 ? 2 : 0)
+    console.log(
+      `done with layer ${i} in ${
+        Math.round((performance.now() - t0) / 10) / 100
+      }s`
+    )
+  }
 })()
