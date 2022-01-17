@@ -1,4 +1,4 @@
-import { mag, dot, add, sub, mult, norm } from './vector'
+import { mag, magSq, dot, add, sub, mult, norm, rgb, reflect } from './vector'
 
 const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
@@ -22,7 +22,7 @@ async function render() {
         y / raysH * -vrH + vrH / 2,
         1
       ]
-      const cl = trace(pos, norm(dir))
+      const cl = rgb(...trace(pos, norm(dir)))
       const sx = x * (canvas.width / raysW)
       const sy = y * (canvas.height / raysH)
       ctx.fillStyle = cl
@@ -34,27 +34,40 @@ async function render() {
 
 const objs = [
   [[0,0,5], 1],
-  [[2,1,8], 1]
+  [[2,1,8], 1],
 ]
 
-const rgb = (...c) => '#' + c.map(v => ('00' + Math.floor((v * 0xFF)).toString(16)).slice(-2)).join('')
+const nl = 50
+for (let i = 0; i < nl; i++) {
+  const x = Math.sin(i / nl * 2 * Math.PI) * 20
+  const z = Math.cos(i / nl * 2 * Math.PI) * 20
+  const y = Math.random() * 100 - 50
+  const r = 1 + Math.random() * 2
+  const cl = Array(3).fill().map(v => Math.random() * .5 + .5)
+  objs.push([[x, y, z], r, cl])
+}
 
 function trace(pos, dir) {
-  let mags = objs.map((v,i) => [mag(sub(v, pos)), i]).sort(([a], [b]) => a-b)
+  let mags = objs.map((v,i) => [magSq(sub(v, pos)), i]).sort(([a], [b]) => a-b)
   for (let i = 0; i < objs.length; i++) {
     let obj = objs[mags[i][1]]
     const v = intersects(pos, dir, obj[0], obj[1])
-    if (v) return '#fff'
+    if (!v) continue
+    if (obj[2]) return obj[2]
+    const cl = trace(v, reflect(dir, norm(sub(v, obj[0]))))
+    return mult(cl, .8)
   }
-  return '#000'
+  return [0,0,0] 
 }
 
 function intersects(o, u, c, r) {
   const omc = sub(o, c)
   const du = dot(u, omc)
   const s = du ** 2 - (mag(omc) ** 2 - r ** 2)
-  if (s <= 0 || -du - s <= 0) return null 
-  return add(o, mult(u, -du - s))
+  if (s <= 0) return null 
+  const d = -du - Math.sqrt(s)
+  if (d <= 0) return null
+  return add(o, mult(u, d))
 }  
   
 
