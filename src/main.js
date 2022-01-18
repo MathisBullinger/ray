@@ -1,6 +1,8 @@
 import { mag, dot, add, sub, mult, norm, rgb, reflect } from './vector'
+import objs from './scene'
 
 const renderLights = true
+const limit = 50
 const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
 canvas.width = window.innerWidth * devicePixelRatio
@@ -38,56 +40,26 @@ async function render(raysW, skip = 0) {
   }
 }
 
-const objs = [[[-7, 7, 10], 9]]
-
-for (let x = -1; x <= 1; x++)
-  for (let y = -1; y <= 1; y++)
-    for (let z = 0; z < 3; z++)
-      objs.push([[x * 3 + 2, y * 3 - 2, z * 3 + 12], 1])
-
-const nl = 300
-const gr = (1 + 5 ** 0.5) / 2
-for (let i = 0; i < nl; i++) {
-  const theta = (2 * Math.PI * i) / gr
-  const phi = Math.acos(1 - (2 * (i + 0.5)) / nl)
-  objs.push([
-    [
-      Math.cos(theta) * Math.sin(phi),
-      Math.cos(phi),
-      Math.sin(theta) * Math.sin(phi),
-    ].map((v) => v * 100),
-    8,
-    [(i / nl) * 1, 0, (1 - i / nl) * 1],
-  ])
-}
-
-let lm = null
-let getOrd = (pos) => {
-  if (lm && lm[0][0] === pos[0] && lm[0][1] === pos[1] && lm[0][2] === pos[2])
-    return lm[1]
-  const mags = objs
-    .map(([v, r], i) => [mag(sub(v, pos)) - r, i])
-    .sort(([a], [b]) => a - b)
-    .map(([, i]) => i)
-  lm = [pos, mags]
-  return mags
-}
-
 function trace(pos, dir, lvl = 0) {
-  if (lvl >= 5) return null
-  const mags = getOrd(pos)
-  for (let i = 0; i < objs.length; i++) {
-    let obj = objs[mags[i]]
-    if (lvl === 0 && !renderLights && obj[2]) continue
-    const v = intersect(pos, dir, obj[0], obj[1])
-    if (!v) continue
-    const cr = obj[2]
-      ? [obj[2], 0]
-      : trace(v[0], reflect(dir, norm(sub(v[0], obj[0]))), lvl + 1)
-    if (!cr) return null
-    return [cr[0], cr[1] + v[1]]
+  if (lvl > limit) return null
+  let candidate = null
+
+  for (const obj of objs) {
+    if (lvl === 0 && obj[2] && !renderLights) continue
+    const hit = intersect(pos, dir, obj[0], obj[1])
+    if (!hit) continue
+    if (hit[1] < (candidate?.dist ?? Infinity))
+      candidate = { obj, dist: hit[1], at: hit[0] }
   }
-  return null
+
+  if (!candidate) return null
+  if (candidate.obj[2]) return [candidate.obj[2], candidate.dist]
+  const res = trace(
+    candidate.at,
+    reflect(dir, norm(sub(candidate.at, candidate.obj[0]))),
+    lvl + 1
+  )
+  return res && [res[0], res[1] + candidate.dist]
 }
 
 function intersect(o, u, c, r) {
