@@ -1,4 +1,7 @@
-const scene = [[[-7, 7, 10], 9]]
+import type { Vector } from './vector'
+import type { Sphere } from './worker'
+
+const scene: Sphere[] = [[[-7, 7, 10], 9]]
 
 for (let x = -1; x <= 1; x++)
   for (let y = -1; y <= 1; y++)
@@ -15,7 +18,7 @@ for (let i = 0; i < nl; i++) {
       Math.cos(theta) * Math.sin(phi),
       Math.cos(phi),
       Math.sin(theta) * Math.sin(phi),
-    ].map((v) => v * 100),
+    ].map(v => v * 100) as Vector,
     8,
     [(i / nl) * 1, 0, (1 - i / nl) * 1],
   ])

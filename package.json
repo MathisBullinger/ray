@@ -10,7 +10,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "vite": "^2.7.12"
+  "devDependencies": {
+    "prettier": "^2.5.1",
+    "vite": "^2.7.13"
   }
 }
