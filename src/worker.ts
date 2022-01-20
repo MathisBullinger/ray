@@ -103,11 +103,9 @@ function trace(pos: Vector, dir: Vector, lvl = 0): [Vector, number] | null {
 
   if (!candidate) return null
   if (candidate.obj[2]) return [candidate.obj[2], candidate.dist]
-  const res = trace(
-    candidate.at,
-    vec.reflect(dir, vec.norm(vec.sub(candidate.at, candidate.obj[0]))),
-    lvl + 1
-  )
+  let vh = vec.sub(candidate.at, candidate.obj[0])
+  if (candidate.obj[1] !== 1) vh = vec.norm(vh)
+  const res = trace(candidate.at, vec.reflect(dir, vh), lvl + 1)
   return res && [res[0].map(v => v * 0.97) as any, res[1] + candidate.dist]
 }
 
